@@ -1,0 +1,19 @@
+{
+	"name": "battleships",
+	"main": "out/index.js",
+	"private": true,
+	"scripts": {
+		"start": "tsc && node .",
+		"debug": "tsc && node --inspect .",
+		"build": "tsc"
+	},
+	"dependencies": {
+		"chalk": "4.1.2",
+		"yargs": "^17.3.1"
+	},
+	"devDependencies": {
+		"@types/node": "^17.0.14",
+		"@types/yargs": "^17.0.8",
+		"typescript": "^4.5.5"
+	}
+}
