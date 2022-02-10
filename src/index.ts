@@ -1,5 +1,6 @@
 import { AI, AI_STATE } from "./ai";
-import { Board } from "./game";
+import { Board, SHIP_TYPES } from "./game";
+import utils from "./utils";
 
 // Initialize some stuff
 // boards[0] - Our board, boards[1] - Opponent's board
@@ -15,6 +16,14 @@ ai.on("input", (data) => {
 
 		case AI_STATE.WAITING:
 			ai.respondToAttack(data);
+			break;
+	}
+});
+
+ai.on("state_change", (newState) => {
+	switch(newState) {
+		case AI_STATE.PLAYING:
+			ai.shoot();
 			break;
 	}
 });

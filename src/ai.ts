@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { Board } from "./game";
+import { Board, SHIP_TYPES } from "./game";
 import utils from "./utils";
 import argv from "./argv";
 
@@ -18,6 +18,7 @@ class AI extends EventEmitter {
 	state: AI_STATE;
 	mode: AI_MODE;
 	boards: Board[];
+	probabilityMap: number[][];
 	output: NodeJS.WriteStream;
 	input: NodeJS.ReadStream;
 
@@ -26,22 +27,55 @@ class AI extends EventEmitter {
 		this.state = state || AI_STATE.STARTING;
 		this.mode = mode || AI_MODE.SEARCHING;
 		this.boards = boards;
+		this.probabilityMap = [];
 		this.output = process.stdout;
 		this.input = process.stdin;
 
+		// Generate ships on our board
 		Board.generateShips(this.boards[0]);
 
+		// Fill probability map with zeros
+		for(let i = 0; i < 10; i++) {
+			this.probabilityMap.push(new Array(10).fill(0));
+		}
+
+		// Calculate baseline probabilities
+		for(let i = 0; i < 10; i++) {
+			for(let j = 0; j < 10; j++) {
+				let probability = 0;
+				for(const shipType of SHIP_TYPES) {
+					if(shipType.length == 1) {
+						probability += 1;
+						continue;
+					}
+					for(let k = 0; k < 4; k++) {
+						let canFit = true;
+						for(let m = 0; m < shipType.length; m++) {
+							if(!utils.isBetween((k <= 1 ? i : j) + (k % 2 == 0 ? m : -m), 0, 9)) canFit = false;
+						}
+						if(canFit) probability += shipType.count;
+					}
+				}
+				this.probabilityMap[j][i] = probability;
+			}
+		}
+
+		// Process input data
 		this.input.on("data", (data) => {
 			let parsed = data.toString().trim();
 			if(argv.d) console.log(utils.debugFmt(`Received data on stdin: ${parsed}`));
 			this.emit("input", parsed);
 		});
 
+		this.on("end", () => {
+			process.exit(0);
+		});
+
 		if(argv.d) console.log(utils.debugFmt(`Initialized AI with the following properties: state = ${AI_STATE[this.state]}, mode = ${AI_MODE[this.mode]}`));
 	}
 
 	shoot() {
-
+		console.log("Pew!");
 	}
 
 	respondToAttack(coord: string) {
@@ -67,13 +101,16 @@ class AI extends EventEmitter {
 				}
 				if(this.boards[0].ships.size <= 0) {
 					a += ", end";
-					this.changeState(AI_STATE.END);
+					this.state = AI_STATE.END;
+					this.emit("end");
 				}
 			}
 			this.output.write(a + "\n");
 		} else {
 			this.output.write("miss\n");
 		}
+
+		if(this.state != AI_STATE.END) this.changeState(AI_STATE.PLAYING);
 	}
 
 	changeState(newState: AI_STATE) {
@@ -83,7 +120,9 @@ class AI extends EventEmitter {
 	}
 
 	changeStrategy(newMode: AI_MODE) {
+		if(argv.d) console.log(utils.debugFmt(`Changed AI mode from ${AI_MODE[this.mode]} to ${AI_MODE[newMode]}`));
 		this.mode = newMode;
+		this.emit("mode_change");
 	}
 }
 
