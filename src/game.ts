@@ -15,54 +15,64 @@ class Board {
 	cells: any[][];
 	ships: Map<string, Ship>;
 
-	constructor(rows: number, columns: number, defaultCell: number) {
+	constructor(rows: number, columns: number, isEnemy?: boolean) {
 		this.rows = rows;
 		this.columns = columns;
 		this.cells = [];
 		this.ships = new Map<string, Ship>();
 
 		for(let i = 0; i < this.columns; i++) {
-			this.cells.push(new Array(this.rows).fill(defaultCell));
+			this.cells.push(new Array(this.rows).fill(isEnemy ? -1 : 0));
+		}
+
+		if(isEnemy) {
+			for(const shipType of SHIP_TYPES) {
+				for(let i = 0; i < shipType.count; i++) {
+					this.ships.set(`${shipType.type}${i}`, new Ship(shipType.length, -1, [-1, -1]));
+				}
+			}
+		} else {
+			this.generateShips();
 		}
 	}
 
 	/**
 	 * @param id "XY" - X = ship type ID, Y = n of ship type
 	 */
-	static generateShip(id: string, length: number, board: Board): void {
+	private generateShip(id: string, length: number): void {
 		let success = true;
 		let newShip: Ship;
 		// Try generating a ship until successfull
 		do {
 			success = true;
 			let orientation = Math.round(Math.random());
-			let maxPos = (orientation == 0 ? board.columns : board.rows) - length;
-			let pos = [Math.round(Math.random() * (orientation == 0 ? maxPos : board.columns - 1)), Math.round(Math.random() * (orientation == 0 ? board.rows - 1 : maxPos))];
+			let maxPos = (orientation == 0 ? this.columns : this.rows) - length;
+			let pos = [Math.round(Math.random() * (orientation == 0 ? maxPos : this.columns - 1)), Math.round(Math.random() * (orientation == 0 ? this.rows - 1 : maxPos))];
 
 			newShip = new Ship(length, orientation, pos);
 			let cellList = newShip.cells();
 			for(const cell of cellList) {
 				// Check other ships actuall cells
-				if(board.cells[cell[0]][cell[1]] != 0) success = false;
+				if(this.cells[cell[0]][cell[1]] != 0) success = false;
 				// Check other ships sides
-				if(cell[0] != 0 && board.cells[cell[0] - 1][cell[1]] != 0) success = false;
-				if(cell[0] != 9 && board.cells[cell[0] + 1][cell[1]] != 0) success = false;
-				if(cell[1] != 0 && board.cells[cell[0]][cell[1] - 1] != 0) success = false;
-				if(cell[1] != 9 && board.cells[cell[0]][cell[1] + 1] != 0) success = false;
+				if(cell[0] != 0 && this.cells[cell[0] - 1][cell[1]] != 0) success = false;
+				if(cell[0] != 9 && this.cells[cell[0] + 1][cell[1]] != 0) success = false;
+				if(cell[1] != 0 && this.cells[cell[0]][cell[1] - 1] != 0) success = false;
+				if(cell[1] != 9 && this.cells[cell[0]][cell[1] + 1] != 0) success = false;
 			}
 		} while (!success);
-		// Load the ship into the board's cells
+		// Load the ship into the boards's cells
 		for(const cell of newShip.cells()) {
-			board.cells[cell[0]][cell[1]] = id;
+			this.cells[cell[0]][cell[1]] = id;
 		}
-		// Put the ship into board's ship array
-		board.ships.set(id, newShip);
+		// Put the ship into this's ship array
+		this.ships.set(id, newShip);
 	}
 
-	static generateShips(board: Board): void {
+	private generateShips(): void {
 		for(const shipType of SHIP_TYPES) {
 			for(let i = 0; i < shipType.count; i++) {
-				Board.generateShip(`${shipType.type}${i}`, shipType.length, board);
+				this.generateShip(`${shipType.type}${i}`, shipType.length);
 			}
 		}
 	}
@@ -97,6 +107,7 @@ class Ship {
 		this.health -= power;
 	}
 }
+
 
 export {
 	Board,
