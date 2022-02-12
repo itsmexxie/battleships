@@ -27,7 +27,17 @@ ai.on("input", (data: string) => {
 			} else {
 				ai.boards[1].cells[ai.currAttack[0]][ai.currAttack[1]] = 1;
 				if(cmds.length == 2) {
-					// ai.boards[1].ships.delete() // TODO: Implement removing the actual ship
+					for(const [key, value] of ai.boards[1].ships.entries()) {
+						if(value.length == ai.target.length) {
+							ai.boards[1].ships.delete(key);
+							break;
+						}
+					}
+					ai.changeMode(AI_MODE.SEARCH);
+				} else {
+					ai.target.cellList.push(ai.currAttack);
+					ai.target.length += 1;
+					if(ai.mode != AI_MODE.TARGET) ai.changeMode(AI_MODE.TARGET);
 				}
 			}
 			ai.changeState(AI_STATE.WAITING);
@@ -37,10 +47,6 @@ ai.on("input", (data: string) => {
 
 ai.on("state_change", (newState) => {
 	switch(newState) {
-		case AI_STATE.WAITING:
-			ai.changeState(AI_STATE.PLAYING);
-			break;
-
 		case AI_STATE.PLAYING:
 			ai.shoot();
 			break;

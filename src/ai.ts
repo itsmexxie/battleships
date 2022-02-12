@@ -24,7 +24,7 @@ class AI extends EventEmitter {
 	mode: AI_MODE;
 	boards: Board[];
 	currAttack: number[];
-	target: {};
+	target: { cellList: number[][], length: number };
 	output: NodeJS.WriteStream;
 	input: NodeJS.ReadStream;
 
@@ -34,7 +34,10 @@ class AI extends EventEmitter {
 		this.mode = mode || AI_MODE.SEARCH;
 		this.boards = boards;
 		this.currAttack = [];
-		this.target = {};
+		this.target = {
+			cellList: [],
+			length: 0
+		};
 		this.output = process.stdout;
 		this.input = process.stdin;
 
@@ -51,34 +54,14 @@ class AI extends EventEmitter {
 	shoot() {
 		switch(this.mode) {
 			case AI_MODE.SEARCH:
-				let probabilityList = this.calculateProbabilities();
-
-				if(argv.d) {
-					let debugMap: number[][] = [];
-					for(let i = 0; i < 10; i++) {
-						debugMap.push(new Array(10).fill(0));
-					}
-
-					for(const group of probabilityList) {
-						for(const cell of group.cells) {
-							debugMap[cell[0]][cell[1]] = group.probability;
-						}
-					}
-
-					for(let i = 0; i < 10; i++) {
-						let a = "";
-						for(let j = 0; j < 10; j++) {
-							a += `${debugMap[j][i].toString()} `;
-						}
-						console.log(a);
-					}
-				}
-
+				let probabilityList = this.calculateSearchProbabilities();
 				this.currAttack = probabilityList[0].cells[Math.floor(Math.random() * probabilityList[0].cells.length)];
+				if(argv.d) console.log(utils.debugFmt(`Picking one of the cells with the currently highest probability (${probabilityList[0].probability}): ${probabilityList[0].cells.join("; ")}...`));
 				this.output.write(utils.encodeCoords(this.currAttack) + "\n");
 				break;
 
 			case AI_MODE.TARGET:
+				// Implement target mode
 				break;
 
 			default:
@@ -120,12 +103,13 @@ class AI extends EventEmitter {
 		this.changeState(AI_STATE.PLAYING);
 	}
 
-	calculateProbabilities(): ProbabilityGroup[] {
+	calculateSearchProbabilities(): ProbabilityGroup[] {
 		let a: ProbabilityGroup[] = [];
 		for(let i = 0; i < this.boards[1].rows; i++) {
 			for(let j = 0; j < this.boards[1].columns; j++) {
 				let probability = 0;
 				if(this.boards[1].cells[j][i] == -1) {
+					// TODO: Change to account for sunk ships
 					for(const shipType of SHIP_TYPES) {
 						if(shipType.length == 1) {
 							probability += 1;
