@@ -24,7 +24,7 @@ class AI extends EventEmitter {
 	mode: AI_MODE;
 	boards: Board[];
 	currAttack: number[];
-	target: { cellList: number[][], length: number };
+	target: { cellList: number[][], length: number, orientation: number };
 	output: NodeJS.WriteStream;
 	input: NodeJS.ReadStream;
 
@@ -36,7 +36,8 @@ class AI extends EventEmitter {
 		this.currAttack = [];
 		this.target = {
 			cellList: [],
-			length: 0
+			length: 0,
+			orientation: -1
 		};
 		this.output = process.stdout;
 		this.input = process.stdin;
@@ -53,16 +54,37 @@ class AI extends EventEmitter {
 
 	shoot() {
 		switch(this.mode) {
-			case AI_MODE.SEARCH:
+			case AI_MODE.SEARCH: {
 				let probabilityList = this.calculateSearchProbabilities();
 				this.currAttack = probabilityList[0].cells[Math.floor(Math.random() * probabilityList[0].cells.length)];
 				if(argv.d) console.log(utils.debugFmt(`Picking one of the cells with the currently highest probability (${probabilityList[0].probability}): ${probabilityList[0].cells.join("; ")}...`));
 				this.output.write(utils.encodeCoords(this.currAttack) + "\n");
 				break;
+			}
 
-			case AI_MODE.TARGET:
-				// Implement target mode
+			case AI_MODE.TARGET: {
+				if(this.target.cellList.length > 1) {
+					// Calculate orientation if not yet calculated
+					if(this.target.orientation == -1) {
+						if(Math.abs(this.target.cellList[0][0] - this.target.cellList[1][0]) == 1) this.target.orientation = 0;
+						else this.target.orientation = 1;
+					}
+					let a = this.target.cellList.map((el) => { return el[this.target.orientation] });
+					console.log(Math.min.apply(a));
+					console.log(Math.max.apply(a));
+					// TODO: Finish
+				} else {
+					// TODO: Account for obstructions and board border
+					// TODO: Loop through cells, add them to an array while checking if they can exist, and pick one at random
+					// Pick a cell surrounding it at random
+
+					// let rndOrient = Math.floor(Math.random());
+					// this.currAttack = [rndOrient == 0 ? this.currAttack[0] : Math.floor(Math.random() * 2) + (this.target.cellList[0][0] - 1), rndOrient == 0 ? Math.floor(Math.random() * 2) + (this.target.cellList[0][1] - 1) : 0];
+					// if(argv.d) console.log(utils.debugFmt(`Picked a cell around last hit at random: [x: ${this.currAttack[0]}, y: ${this.currAttack[1]}]`));
+					// this.output.write(utils.encodeCoords(this.currAttack) + "\n");
+				}
 				break;
+			}
 
 			default:
 				break;
