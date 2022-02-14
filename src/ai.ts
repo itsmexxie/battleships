@@ -6,7 +6,8 @@ import argv from "./argv";
 enum AI_STATE {
 	STARTING,
 	WAITING,
-	PLAYING
+	PLAYING,
+	END
 };
 
 enum AI_MODE {
@@ -63,26 +64,37 @@ class AI extends EventEmitter {
 			}
 
 			case AI_MODE.TARGET: {
+				let attackList: number[][] = [];
 				if(this.target.cellList.length > 1) {
 					// Calculate orientation if not yet calculated
 					if(this.target.orientation == -1) {
 						if(Math.abs(this.target.cellList[0][0] - this.target.cellList[1][0]) == 1) this.target.orientation = 0;
 						else this.target.orientation = 1;
+						if(argv.d) console.log(utils.debugFmt(`Calculated the target's orientation as ${["West-East", "North-South"][this.target.orientation]}`));
 					}
-					let a = this.target.cellList.map((el) => { return el[this.target.orientation] });
-					console.log(Math.min.apply(a));
-					console.log(Math.max.apply(a));
-					// TODO: Finish
-				} else {
-					// TODO: Account for obstructions and board border
-					// TODO: Loop through cells, add them to an array while checking if they can exist, and pick one at random
-					// Pick a cell surrounding it at random
 
-					// let rndOrient = Math.floor(Math.random());
-					// this.currAttack = [rndOrient == 0 ? this.currAttack[0] : Math.floor(Math.random() * 2) + (this.target.cellList[0][0] - 1), rndOrient == 0 ? Math.floor(Math.random() * 2) + (this.target.cellList[0][1] - 1) : 0];
-					// if(argv.d) console.log(utils.debugFmt(`Picked a cell around last hit at random: [x: ${this.currAttack[0]}, y: ${this.currAttack[1]}]`));
-					// this.output.write(utils.encodeCoords(this.currAttack) + "\n");
+					// Get cells around the ship
+					let a = this.target.cellList.map((el) => { return el[this.target.orientation] });
+					let minMaxCoord = [Math.min(...a) - 1, Math.max(...a) + 1];
+					let lastAttack = this.target.cellList[this.target.cellList.length - 1];
+					for(let i = 0; i < 2; i++) {
+						let testX = this.target.orientation == 0 ? (minMaxCoord[i]) : lastAttack[0];
+						let testY = this.target.orientation == 0 ? lastAttack[1] : (minMaxCoord[i]);
+						if(!utils.isBetween(testX, 0, 9) || !utils.isBetween(testY, 0, 9)) continue;
+						if(![0, 1].includes(this.boards[1].cells[testX][testY])) attackList.push([testX, testY]);
+					}
+					if(argv.d) console.log(utils.debugFmt(`Calculated the ends of the ship at: ${attackList.join("; ")}`));
+				} else {
+					for(let i = 0; i < 4; i++) {
+						let x = this.target.cellList[0][0] + (i <= 1 ? 0 : (i % 2 == 0 ? 1 : -1));
+						let y = this.target.cellList[0][1] + (i <= 1 ? (i % 2 == 0 ? 1 : -1) : 0);
+						if(!utils.isBetween(x, 0, 9) || !utils.isBetween(y, 0, 9)) continue;
+						if(![0, 1].includes(this.boards[1].cells[x][y])) attackList.push([x, y]);
+					}
+					if(argv.d) console.log(utils.debugFmt(`Calculated the cells around last attack: ${attackList.join("; ")}`));
 				}
+				this.currAttack = attackList[Math.floor(Math.random() * attackList.length)];
+				this.output.write(utils.encodeCoords(this.currAttack) + "\n");
 				break;
 			}
 
@@ -114,10 +126,11 @@ class AI extends EventEmitter {
 				}
 				if(this.boards[0].ships.size <= 0) {
 					a += ", end";
-					// TODO: Implement end
+					this.changeState(AI_STATE.END);
 				}
 			}
 			this.output.write(a + "\n");
+			if(this.state == AI_STATE.END) process.exit(0);
 		} else {
 			this.output.write("miss\n");
 		}
@@ -132,20 +145,20 @@ class AI extends EventEmitter {
 				let probability = 0;
 				if(this.boards[1].cells[j][i] == -1) {
 					// TODO: Change to account for sunk ships
-					for(const shipType of SHIP_TYPES) {
-						if(shipType.length == 1) {
+					for(const ship of this.boards[1].ships.values()) {
+						if(ship.length == 1) {
 							probability += 1;
 							continue;
 						}
 						for(let k = 0; k < 4; k++) {
 							let canFit = true;
-							for(let m = 0; m < shipType.length; m++) {
+							for(let m = 0; m < ship.length; m++) {
 								if(!utils.isBetween((k <= 1 ? i : j) + (k % 2 == 0 ? m : -m), 0, 9)) canFit = false;
 								else {
 									if(this.boards[1].cells[j + (k <= 1 ? 0 : (k % 2 == 0 ? m : -m))][i + (k <= 1 ? (k % 2 == 0 ? m : -m) : 0)] != -1) canFit = false;
 								}
 							}
-							if(canFit) probability += shipType.count;
+							if(canFit) probability += 1;
 						}
 					}
 				}

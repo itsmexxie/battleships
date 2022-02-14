@@ -12,8 +12,8 @@ ai.on("input", (data: string) => {
 	switch(ai.state) {
 		case AI_STATE.STARTING:
 			let parsedData = parseInt(data);
-			if(!(parsedData == 0 || parsedData == 1)) return;
-			ai.changeState(parseInt(data) + 1);
+			if(![0, 1].includes(parsedData)) return;
+			ai.changeState(parsedData + 1);
 			break;
 
 		case AI_STATE.WAITING:
@@ -22,7 +22,8 @@ ai.on("input", (data: string) => {
 
 		case AI_STATE.PLAYING:
 			let cmds = data.toLowerCase().split(", ");
-			if(cmds.length == 3) process.exit(0); // TODO: Implement end
+			if(cmds.length == 3) process.exit(0);
+			if(cmds[0] != "hit" && cmds[0] != "miss") return;
 			if(cmds[0] == "miss") {
 				if(argv.d) console.log(utils.debugFmt(`Miss at [x: ${ai.currAttack[0]}, y: ${ai.currAttack[1]}]!`));
 				ai.boards[1].cells[ai.currAttack[0]][ai.currAttack[1]] = 0;
@@ -38,10 +39,10 @@ ai.on("input", (data: string) => {
 							ai.boards[1].ships.delete(key);
 							for(const cell of ai.target.cellList) {
 								for(let i = 0; i < 4; i++) {
-									let x = cell[0] + (i <= 1 ? 0 : (i % 2 == 0 ? 1 : -1));
-									let y = cell[1] + (i <= 1 ? (i % 2 == 0 ? 1 : -1) : 0);
-									if(!utils.isBetween(x, 0, 9) || !utils.isBetween(y, 0, 9)) continue;
-									if(ai.boards[1].cells[x][y] != 1) ai.boards[1].cells[x][y] == 0;
+									let updateX = cell[0] + (i <= 1 ? 0 : (i % 2 == 0 ? 1 : -1));
+									let updateY = cell[1] + (i <= 1 ? (i % 2 == 0 ? 1 : -1) : 0);
+									if(!utils.isBetween(updateX, 0, 9) || !utils.isBetween(updateY, 0, 9)) continue;
+									if(ai.boards[1].cells[updateX][updateY] != 1) ai.boards[1].cells[updateX][updateY] == 0;
 								}
 							}
 							ai.target = { cellList: [], length: 0, orientation: -1 };
@@ -68,12 +69,12 @@ ai.on("state_change", (newState) => {
 });
 
 // Print out our board
-let a = "";
-for(let i = 0; i < ai.boards[0].rows; i++) {
-	for(let j = 0; j < ai.boards[0].columns; j++) {
-		if(ai.boards[0].cells[j][i] == 0) a += ".";
-		else a += "X";
-	}
-	a += "\n";
-}
-ai.output.write(a);
+// let a = "";
+// for(let i = 0; i < ai.boards[0].rows; i++) {
+// 	for(let j = 0; j < ai.boards[0].columns; j++) {
+// 		if(ai.boards[0].cells[j][i] == 0) a += ".";
+// 		else a += "X";
+// 	}
+// 	a += "\n";
+// }
+// ai.output.write(a);

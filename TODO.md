@@ -1,0 +1,1 @@
+- The programs at least needs to calculate if a ship that hasn't been sunk can fit into the space when guessing the four random cells around a hit (e.g.: A three cell ships wouldn't fit into a two cell space but our program is gonna try it anyway.)
