@@ -1,5 +1,5 @@
 import { AI, AI_MODE, AI_STATE } from "./ai";
-import { Board, SHIP_TYPES } from "./game";
+import { Board } from "./game";
 import utils from "./utils";
 import argv from "./argv";
 
@@ -42,7 +42,7 @@ ai.on("input", (data: string) => {
 									let updateX = cell[0] + (i <= 1 ? 0 : (i % 2 == 0 ? 1 : -1));
 									let updateY = cell[1] + (i <= 1 ? (i % 2 == 0 ? 1 : -1) : 0);
 									if(!utils.isBetween(updateX, 0, 9) || !utils.isBetween(updateY, 0, 9)) continue;
-									if(ai.boards[1].cells[updateX][updateY] != 1) ai.boards[1].cells[updateX][updateY] == 0;
+									if(ai.boards[1].cells[updateX][updateY] != 1) ai.boards[1].cells[updateX][updateY] = 0;
 								}
 							}
 							ai.target = { cellList: [], length: 0, orientation: -1 };
@@ -69,12 +69,12 @@ ai.on("state_change", (newState) => {
 });
 
 // Print out our board
-// let a = "";
-// for(let i = 0; i < ai.boards[0].rows; i++) {
-// 	for(let j = 0; j < ai.boards[0].columns; j++) {
-// 		if(ai.boards[0].cells[j][i] == 0) a += ".";
-// 		else a += "X";
-// 	}
-// 	a += "\n";
-// }
-// ai.output.write(a);
+let a = "";
+for(let i = 0; i < ai.boards[0].rows; i++) {
+	for(let j = 0; j < ai.boards[0].columns; j++) {
+		if(ai.boards[0].cells[j][i] == 0) a += ".";
+		else a += "X";
+	}
+	a += "\n";
+}
+ai.output.write(a);

@@ -67,6 +67,7 @@ class AI extends EventEmitter {
 				let attackList: number[][] = [];
 				if(this.target.cellList.length > 1) {
 					// Calculate orientation if not yet calculated
+					// Orientation flipped (e.g.: 0 - West-East; 1 - North-South)
 					if(this.target.orientation == -1) {
 						if(Math.abs(this.target.cellList[0][0] - this.target.cellList[1][0]) == 1) this.target.orientation = 0;
 						else this.target.orientation = 1;
@@ -144,7 +145,6 @@ class AI extends EventEmitter {
 			for(let j = 0; j < this.boards[1].columns; j++) {
 				let probability = 0;
 				if(this.boards[1].cells[j][i] == -1) {
-					// TODO: Change to account for sunk ships
 					for(const ship of this.boards[1].ships.values()) {
 						if(ship.length == 1) {
 							probability += 1;
